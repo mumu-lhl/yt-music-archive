@@ -1,0 +1,126 @@
+#!/bin/bash
+
+help() {
+  echo "Usage: yt-music-archive <commands> [options]
+
+Commands:
+  save <id>            Save a song to the archive file and download the music
+  fetch                Fetch all songs from the archive file
+  
+Options:
+  -p, --path <path>  Set the output path
+  -h, --help           Help"
+  exit 0
+}
+
+save_to_archive() {
+  mkdir -p $(dirname $archive_file)
+  echo $id >>$archive_file
+}
+
+save() {
+  if [ -z $id ]; then
+    error_id
+  fi
+
+  if [ -z $path ] && [ $default_path ]; then
+    path=$default_path
+  fi
+
+  if [ $path ]; then
+    yt-dlp --extract-audio "https://music.youtube.com/watch?v=$id" --embed-metadata --path $path && save_to_archive
+  else
+    yt-dlp --extract-audio "https://music.youtube.com/watch?v=$id" --embed-metadata && save_to_archive
+  fi
+}
+
+fetch() {
+  while read id; do
+    save
+  done < $archive_file
+}
+
+error() {
+  echo -e "\033[31mError: $1\033[0m"
+  exit 1
+}
+
+set_command() {
+  if [ "$command" ]; then
+    error "There can be only one command!"
+  else
+    command=$1
+  fi
+}
+
+error_command() {
+  error "Commands"
+}
+
+error_option() {
+  error "Option"
+}
+
+error_id() {
+  error "Missing id"
+}
+
+error_path() {
+  error "Missing path"
+}
+
+if [ -z $1 ]; then
+  help
+fi
+
+while [ "$1" ]; do
+  if [ "$1" = "save" ]; then
+    set_command "save"
+    enable_id=2
+
+  elif [ "$1" = "fetch" ]; then
+    set_command "fetch"
+
+  elif [ "$1" = "-p" ] || [ "$1" = "--path" ]; then
+    enable_path=2
+
+  elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+
+  elif [ $enable_path = 1 ]; then
+    path=$1
+
+  elif [ "$command" = "save" ] && [ $enable_id = 1 ] && [ -z $id ]; then
+    id=$1
+
+  else
+    if [ ${1:0:1} = "-" ]; then
+      error_option
+    else
+      error_command
+    fi
+  fi
+  ((enable_path--))
+  ((enable_id--))
+  shift
+done
+
+if [ $enable_path = 1 ]; then
+  error_path
+fi
+
+CONFIG_GLOBAL="/etc/yt-music-archive/yt-music-archive.conf"
+if [ -f $CONFIG_GLOBAL ]; then
+  source $CONFIG_GLOBAL
+fi
+
+CONFIG_LOCAL="/home/$USER/.config/yt-music-archive/yt-music-archive.conf"
+if [ -f $CONFIG_LOCAL ]; then
+  source $CONFIG_LOCAL
+fi
+
+if [ "$command" = "save" ]; then
+  save
+elif [ "$command" = "fetch" ]; then
+  fetch
+fi
