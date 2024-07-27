@@ -87,7 +87,7 @@ while [ "$1" ]; do
   elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     help
 
-  elif [ $enable_path = 1 ]; then
+  elif [ "$enable_path" = 1 ]; then
     path=$1
 
   elif [ "$command" = "save" ] && [ $enable_id = 1 ] && [ -z $id ]; then
