@@ -2,6 +2,8 @@
 
 English | [中文](./README_CN.md)
 
+**I'm a 🤡: You can use yt-dlp to download a playlist to do the same feature**
+
 Download youtube music locally and store its id in a archive file, and restore the music from this file.
 
 ## Install
